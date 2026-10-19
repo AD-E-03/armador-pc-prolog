@@ -1,0 +1,12 @@
+FROM swipl:stable
+
+WORKDIR /app
+
+COPY server/ server/
+COPY web/ web/
+COPY prolog/ prolog/
+
+ENV PORT=80
+EXPOSE 80
+
+CMD ["swipl", "server/servidor.pl"]
