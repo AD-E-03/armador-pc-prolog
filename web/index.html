@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Armador de PC</title>
+</head>
+<body>
+  <h1>Armador de PC</h1>
+  <p id="estado">Consultando al servidor...</p>
+  <script>
+    fetch('/api/ping')
+      .then(r => r.json())
+      .then(d => document.getElementById('estado').textContent = d.mensaje)
+      .catch(() => document.getElementById('estado').textContent = 'Error al conectar');
+  </script>
+</body>
+</html>
