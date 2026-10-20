@@ -1,0 +1,27 @@
+[1mtrue.[0m
+
+['prolog/conocimiento'].
+
+
+[1mtrue.[0m
+
+compatible(ryzen_5_5600x, msi_b550m_pro).
+
+
+[1mtrue.[0m
+
+compatible(ryzen_7_7700x, asus_prime_a320m).
+
+
+[1;31mfalse.[0m
+
+compatible(ryzen_3_3200g, Placa).
+
+
+Placa = asus_prime_a320m  [1m;[0m
+Placa = msi_b550m_pro  [1m;[0m
+[1;31mfalse.[0m
+
+noprotocol.
+
+
