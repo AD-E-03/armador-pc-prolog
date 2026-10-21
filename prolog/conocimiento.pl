@@ -38,6 +38,20 @@ fuente(corsair_550w, 550, 55).
 fuente(cooler_master_650w, 650, 70).
 fuente(thermaltake_750w, 750, 95).
 
+% Jerarquía de gamas: gama_suficiente(GamaComponente, GamaRequerida)
+
+gama_suficiente(alta, _).
+gama_suficiente(media, media).
+gama_suficiente(media, baja).
+gama_suficiente(basica, basica).
+gama_suficiente(baja, baja).
+
+% perfil_uso(Uso, MinRAM, GamaCPU, GamaGPU)
+
+perfil_uso(ofimatica, 8, baja, basica).
+perfil_uso(gaming, 16, media, media).
+perfil_uso(render, 32, alta, alta).
+
 % =====================================================================
 % REGLAS DE COMPATIBILIDAD (REGLAS)
 % =====================================================================
@@ -45,23 +59,79 @@ fuente(thermaltake_750w, 750, 95).
 % compatible_cpu_tarjeta (CPU, Tarjeta)
 
 compatible_cpu_tarjeta(CPU, Tarjeta):-
-	procesador(CPU, Socket, _, _, _) , tarjeta_madre(Tarjeta, Socket, _, _).
+	procesador(CPU, Socket, _, _, _) ,
+	tarjeta_madre(Tarjeta, Socket, _, _).
 
 
 % compatible_placa_ram(Tarjeta, RAM)
 
 compatible_tarjeta_ram(Tarjeta, RAM) :-
-	tarjeta_madre(Tarjeta, _, TipoRAM, _) , memoria_ram(RAM, TipoRAM, _, _).
+	tarjeta_madre(Tarjeta, _, TipoRAM, _) ,
+	memoria_ram(RAM, TipoRAM, _, _).
 
 
 % combo_compatible(CPU, Tarjeta, RAM)
 
 combo_compatible(CPU, Tarjeta, RAM) :-
-	compatible_cpu_tarjeta(CPU, Tarjeta) , compatible_tarjeta_ram(Tarjeta, RAM).
+	compatible_cpu_tarjeta(CPU, Tarjeta) ,
+	compatible_tarjeta_ram(Tarjeta, RAM).
 
 
 % fuente_suficiente(CPU, GPU, Fuente)
 
 fuente_suficiente(CPU, GPU, Fuente) :-
-    procesador(CPU, _, ConsumoCPU, _, _) , gpu(GPU, ConsumoGPU, _, _) , fuente(Fuente, PotenciaFuente, _) , WattsRequeridos is ConsumoCPU + ConsumoGPU + 100,
-    PotenciaFuente >= WattsRequeridos.
+	procesador(CPU, _, ConsumoCPU, _, _) ,
+	gpu(GPU, ConsumoGPU, _, _) ,
+	fuente(Fuente, PotenciaFuente, _) ,
+	WattsRequeridos is ConsumoCPU + ConsumoGPU + 150,
+	PotenciaFuente >= WattsRequeridos.
+
+
+% Verifica que la RAM y las gamas de CPU/GPU satisfagan el perfil de uso
+
+cumple_uso(Uso, CPU, RAM, GPU) :-
+	perfil_uso(Uso, MinRAM, GamaMinCPU, GamaMinGPU) ,
+	procesador(CPU, _, _, GamaCPU, _) ,
+	gama_suficiente(GamaCPU, GamaMinCPU) ,
+	gpu(GPU, _, GamaGPU, _) ,
+	gama_suficiente(GamaGPU, GamaMinGPU) ,
+	memoria_ram(RAM, _, CapacidadRAM, _) ,
+	CapacidadRAM >= MinRAM.
+
+
+% Calcula el costo acumulado de los 5 componentes
+
+costo_total(CPU, Placa, RAM, GPU, Fuente, CostoTotal) :-
+	procesador(CPU, _, _, _, P1) ,
+	tarjeta_madre(Placa, _, _, P2) ,
+	memoria_ram(RAM, _, _, P3) ,
+	gpu(GPU, _, _, P4) ,
+	fuente(Fuente, _, P5) ,
+	CostoTotal is P1 + P2 + P3 + P4 + P5.
+
+
+% ==============================================================================
+% PREDICADO PRINCIPAL (EL QUE USARÁ LA API)
+% ==============================================================================
+
+% recomendar_ensamble(+Uso, +PresupuestoMax, -CPU, -Placa, -RAM, -GPU, -Fuente, -CostoTotal)
+% Entradas: Uso (atomo: ofimatica, gaming, render), PresupuestoMax (numero)
+% Salidas: Nombres de los 5 componentes y el CostoTotal calculado
+
+recomendar_ensamble(Uso, PresupuestoMax, CPU, Tarjeta, RAM, GPU, Fuente, CostoTotal) :-
+
+    % 1. Valida que el presupuesto sea positivo (filtro de datos inválidos)
+	number(PresupuestoMax),
+	PresupuestoMax > 0,
+
+    % 2. Genera componentes compatibles físicamente
+	combo_compatible(CPU, Tarjeta, RAM),
+	gpu(GPU, _, _, _),
+	fuente_suficiente(CPU, GPU, Fuente),
+
+    % 3. Comprueba que satisfagan el uso
+	cumple_uso(Uso, CPU, RAM, GPU),
+
+    % 4. Comprueba costo contra el presupuesto
+	costo_total(CPU, Tarjeta, RAM, GPU, Fuente, CostoTotal),
+	CostoTotal =< PresupuestoMax.
