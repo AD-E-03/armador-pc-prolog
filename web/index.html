@@ -1,17 +1,145 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Armador de PC</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Armador de PC</title>
+<style>
+  :root { --fondo:#0f172a; --tarjeta:#1e293b; --texto:#e2e8f0; --suave:#94a3b8;
+          --acento:#38bdf8; --ok:#4ade80; --aviso:#fbbf24; --error:#f87171; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--fondo);
+         color:var(--texto); line-height:1.5; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; }
+  .sub { color: var(--suave); margin: 0 0 24px; }
+  form, .resultado { background: var(--tarjeta); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  select, input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #475569;
+                  background:var(--fondo); color:var(--texto); font-size:1rem; }
+  .campos { display:grid; gap:16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width:600px) { .campos { grid-template-columns: 1fr; } }
+  button { margin-top:16px; padding:10px 20px; border:0; border-radius:8px; background:var(--acento);
+           color:#082f49; font-weight:700; font-size:1rem; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .estado { font-weight:700; font-size:1.1rem; margin:0 0 8px; }
+  .exito { color:var(--ok); } .aviso { color:var(--aviso); } .error { color:var(--error); }
+  .tabla { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; margin-top:12px; font-size:.95rem; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #334155; white-space:nowrap; }
+  td.nota { white-space:normal; color:var(--suave); min-width:220px; }
+  [hidden] { display:none; }
+</style>
 </head>
 <body>
+<main>
   <h1>Armador de PC</h1>
-  <p id="estado">Consultando al servidor...</p>
-  <script>
-    fetch('/api/ping')
-      .then(r => r.json())
-      .then(d => document.getElementById('estado').textContent = d.mensaje)
-      .catch(() => document.getElementById('estado').textContent = 'Error al conectar');
-  </script>
+  <p class="sub">Sistema experto en Prolog: elige un uso y un presupuesto y recibe configuraciones compatibles.</p>
+
+  <form id="formulario" novalidate>
+    <div class="campos">
+      <div>
+        <label for="uso">Uso</label>
+        <select id="uso"><option value="">Selecciona un uso</option></select>
+      </div>
+      <div>
+        <label for="presupuesto">Presupuesto maximo</label>
+        <input id="presupuesto" type="text" inputmode="decimal" placeholder="Ej. 800" autocomplete="off">
+      </div>
+    </div>
+    <button id="consultar" type="submit">Consultar</button>
+  </form>
+
+  <section id="resultado" class="resultado" hidden aria-live="polite">
+    <p id="estado" class="estado"></p>
+    <p id="explicacion"></p>
+    <p id="resumen"></p>
+    <div class="tabla">
+      <table id="tabla" hidden>
+        <thead><tr>
+          <th>Procesador</th><th>Tarjeta madre</th><th>RAM</th><th>GPU</th>
+          <th>Fuente</th><th>Costo</th><th>Explicacion</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const ETIQUETAS = {
+    exito: ['Configuraciones encontradas', 'exito'],
+    presupuesto_insuficiente: ['Presupuesto insuficiente', 'aviso'],
+    datos_incompletos: ['Datos incompletos', 'error'],
+    datos_invalidos: ['Datos no validos', 'error'],
+    error_datos: ['Datos no validos', 'error']
+  };
+  const nombre = t => String(t).replaceAll('_', ' ');
+
+  async function cargarUsos() {
+    try {
+      const r = await fetch('/api/usos');
+      const d = await r.json();
+      for (const u of d.usos) {
+        const o = document.createElement('option');
+        o.value = u; o.textContent = u;
+        $('uso').appendChild(o);
+      }
+    } catch (e) {
+      mostrar({conclusion: 'error_datos', explicacion: 'No se pudo cargar la lista de usos.', opciones: [], total: 0});
+    }
+  }
+
+  function mostrar(d) {
+    const [titulo, clase] = ETIQUETAS[d.conclusion] || ['Sin respuesta', 'aviso'];
+    $('resultado').hidden = false;
+    $('estado').textContent = titulo;
+    $('estado').className = 'estado ' + clase;
+    $('explicacion').textContent = d.explicacion || '';
+    const cuerpo = $('tabla').querySelector('tbody');
+    cuerpo.replaceChildren();
+    if (d.conclusion === 'exito') {
+      $('resumen').textContent = 'Se encontraron ' + d.total + ' opciones. Se muestran las ' +
+        d.opciones.length + ' mas economicas.';
+      for (const o of d.opciones) {
+        const fila = document.createElement('tr');
+        const celdas = [nombre(o.cpu), nombre(o.tarjeta_madre), nombre(o.ram), nombre(o.gpu),
+                        nombre(o.fuente), o.costo, o.explicacion];
+        celdas.forEach((v, i) => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          if (i === 6) td.className = 'nota';
+          fila.appendChild(td);
+        });
+        cuerpo.appendChild(fila);
+      }
+      $('tabla').hidden = false;
+    } else {
+      $('resumen').textContent = '';
+      $('tabla').hidden = true;
+    }
+  }
+
+  $('formulario').addEventListener('submit', async e => {
+    e.preventDefault();
+    const boton = $('consultar');
+    boton.disabled = true;
+    try {
+      const r = await fetch('/api/consultar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({uso: $('uso').value, presupuesto: $('presupuesto').value})
+      });
+      mostrar(await r.json());
+    } catch (err) {
+      mostrar({conclusion: 'error_datos', explicacion: 'No se pudo contactar al servidor. Intenta de nuevo.', opciones: [], total: 0});
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  cargarUsos();
+</script>
 </body>
 </html>
