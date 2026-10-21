@@ -2,9 +2,17 @@
 
 | # | Tipo de caso | Consulta | Resultado esperado | Resultado obtenido | Evidencia |
 |---|--------------|----------|--------------------|--------------------|-----------|
-| 1 | Consulta verdadera | `compatible_cpu_tarjeta(ryzen_5_5600x, msi_b550m_pro).` | true | (llenar) | caso01.png |
-| 2 | Consulta falsa (socket distinto) | `compatible_cpu_tarjeta(ryzen_7_7700x, asus_prime_a320m).` | false | (llenar) | caso02.png |
-| 3 | Múltiples soluciones | `compatible_cpu_tarjeta(ryzen_3_3200g, T).` | T = asus_prime_a320m ; T = msi_b550m_pro | (llenar) | caso03.png |
+| 1 | Consulta verdadera | `compatible_cpu_tarjeta(ryzen_5_5600x, msi_b550m_pro).` | true. | true. | caso01.png |
+| 2 | Consulta falsa (socket distinto) | `compatible_cpu_tarjeta(ryzen_7_7700x, asus_prime_a320m).` | false. | false. | caso02.png |
+| 3 | Múltiples soluciones | `compatible_cpu_tarjeta(ryzen_3_3200g, T).` | T = asus_prime_a320m ; T = msi_b550m_pro | F = corsair_550w,
+W = 475,
+P = 550 ;
+F = cooler_master_650w,
+W = 475,
+P = 650 ;
+F = thermaltake_750w,
+W = 475,
+P = 750. | caso03.png |
 | 4 | Múltiples soluciones con aritmética | `fuente_suficiente(ryzen_7_7700x, rtx_4070_super, F, W, P).` | 3 soluciones, W = 475: corsair_550w, cooler_master_650w, thermaltake_750w | (llenar) | caso04.png |
 | 5 | Éxito con múltiples soluciones | `consultar_ensamble(gaming, 1200, C, H, E).` | exito; primera: ryzen_5_5600x, asus_prime_a320m, corsair_vengeance_16gb, rx_6600, evga_450w, costo 485; el total se cuenta con findall | (llenar) | caso05.png |
 | 6 | Otro uso, otra conclusión | `consultar_ensamble(ofimatica, 300, C, H, E).` | exito; primera: ryzen_3_3200g, asus_prime_a320m, kingston_fury_8gb, gt_1030, evga_450w, costo 235 | (llenar) | caso06.png |
