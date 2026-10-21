@@ -17,11 +17,31 @@ tarjeta_madre(msi_b550m_pro, am4, ddr4, 90).
 tarjeta_madre(gigabyte_h610m, lga1700, ddr4, 80).
 tarjeta_madre(msi_pro_b650m, am5, ddr5, 140).
 
+% memoria_ram(Nombre, TipoRAM, CapacidadGB, Precio)
+
+memoria_ram(kingston_fury_8gb, ddr4, 8, 25).
+memoria_ram(corsair_vengeance_16gb, ddr4, 16, 45).
+memoria_ram(crucial_16gb_ddr5, ddr5, 16, 65).
+memoria_ram(kingston_beast_32gb_ddr5, ddr5, 32, 110).
+
 % =====================================================================
 % REGLAS DE COMPATIBILIDAD (REGLAS)
 % =====================================================================
 
-% compatible_cpu_tarjeta (cpu, tarjeta)
+% compatible_cpu_tarjeta (CPU, Tarjeta)
 
-compatible(CPU, Tarjeta):-
+compatible_cpu_tarjeta(CPU, Tarjeta):-
 	procesador(CPU, Socket, _, _, _) , tarjeta_madre(Tarjeta, Socket, _, _).
+
+
+% compatible_placa_ram(Tarjeta, RAM)
+
+compatible_tarjeta_ram(Tarjeta, RAM) :-
+	tarjeta_madre(Tarjeta, _, TipoRAM, _) , memoria_ram(RAM, TipoRAM, _, _).
+
+
+% combo_compatible(CPU, Tarjeta, RAM)
+
+combo_compatible(CPU, Tarjeta, RAM) :-
+	compatible_cpu_tarjeta(CPU, Tarjeta) , compatible_tarjeta_ram(Tarjeta, RAM).
+
