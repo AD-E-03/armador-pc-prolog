@@ -1,0 +1,23 @@
+[1mtrue.[0m
+
+fuente_suficiente(ryzen_5_5600x, rx_6600, corsair_550w).
+
+
+[1mtrue.[0m
+
+fuente_suficiente(ryzen_7_7700x, rtx_4070_super, evga_450w).
+
+
+[1mtrue.[0m
+
+fuente_suficiente(ryzen_3_3200g, gt_1030, Fuente).
+
+
+Fuente = evga_450w  [1m;[0m
+Fuente = corsair_550w  [1m;[0m
+Fuente = cooler_master_650w  [1m;[0m
+Fuente = thermaltake_750w.
+
+noprotocol.
+
+

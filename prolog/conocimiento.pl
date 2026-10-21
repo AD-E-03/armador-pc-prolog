@@ -24,6 +24,20 @@ memoria_ram(corsair_vengeance_16gb, ddr4, 16, 45).
 memoria_ram(crucial_16gb_ddr5, ddr5, 16, 65).
 memoria_ram(kingston_beast_32gb_ddr5, ddr5, 32, 110).
 
+% gpu(Nombre, ConsumoWatts, Gama, Precio)
+
+gpu(gt_1030, 30, basica, 40).
+gpu(rx_6600, 130, media, 200).
+gpu(rtx_4060, 115, media, 300).
+gpu(rtx_4070_super, 220, alta, 600).
+
+% fuente(Nombre, PotenciaWatts, Precio)
+
+fuente(evga_450w, 450, 40).
+fuente(corsair_550w, 550, 55).
+fuente(cooler_master_650w, 650, 70).
+fuente(thermaltake_750w, 750, 95).
+
 % =====================================================================
 % REGLAS DE COMPATIBILIDAD (REGLAS)
 % =====================================================================
@@ -45,3 +59,9 @@ compatible_tarjeta_ram(Tarjeta, RAM) :-
 combo_compatible(CPU, Tarjeta, RAM) :-
 	compatible_cpu_tarjeta(CPU, Tarjeta) , compatible_tarjeta_ram(Tarjeta, RAM).
 
+
+% fuente_suficiente(CPU, GPU, Fuente)
+
+fuente_suficiente(CPU, GPU, Fuente) :-
+    procesador(CPU, _, ConsumoCPU, _, _) , gpu(GPU, ConsumoGPU, _, _) , fuente(Fuente, PotenciaFuente, _) , WattsRequeridos is ConsumoCPU + ConsumoGPU + 100,
+    PotenciaFuente >= WattsRequeridos.
