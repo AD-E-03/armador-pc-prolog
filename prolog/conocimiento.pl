@@ -38,19 +38,26 @@ fuente(corsair_550w, 550, 55).
 fuente(cooler_master_650w, 650, 70).
 fuente(thermaltake_750w, 750, 95).
 
-% Jerarquía de gamas: gama_suficiente(GamaComponente, GamaRequerida)
+% perfil_uso(Uso, MinRAM)
 
-gama_suficiente(alta, _).
-gama_suficiente(media, media).
-gama_suficiente(media, baja).
-gama_suficiente(basica, basica).
-gama_suficiente(baja, baja).
+perfil_uso(ofimatica, 8).
+perfil_uso(gaming, 16).
+perfil_uso(render, 32).
 
-% perfil_uso(Uso, MinRAM, GamaCPU, GamaGPU)
+% gama_adecuada(Uso, Componente, GamaPermitida)
+% Evita que se recomiende hardware extremo para tareas básicas
 
-perfil_uso(ofimatica, 8, baja, basica).
-perfil_uso(gaming, 16, media, media).
-perfil_uso(render, 32, alta, alta).
+gama_adecuada(ofimatica, cpu, baja).
+gama_adecuada(ofimatica, cpu, media).
+gama_adecuada(ofimatica, gpu, basica).
+
+gama_adecuada(gaming, cpu, media).
+gama_adecuada(gaming, cpu, alta).
+gama_adecuada(gaming, gpu, media).
+gama_adecuada(gaming, gpu, alta).
+
+gama_adecuada(render, cpu, alta).
+gama_adecuada(render, gpu, alta).
 
 % =====================================================================
 % REGLAS DE COMPATIBILIDAD (REGLAS)
@@ -77,24 +84,28 @@ combo_compatible(CPU, Tarjeta, RAM) :-
 	compatible_tarjeta_ram(Tarjeta, RAM).
 
 
-% fuente_suficiente(CPU, GPU, Fuente)
+% fuente_suficiente(CPU, GPU, Fuente WattsRequeridos, PotenciaFuente)
+% Dato del dominio extraído para claridad
 
-fuente_suficiente(CPU, GPU, Fuente) :-
+margen_seguridad_fuente(150).
+
+fuente_suficiente(CPU, GPU, Fuente, WattsRequeridos, PotenciaFuente) :-
 	procesador(CPU, _, ConsumoCPU, _, _) ,
 	gpu(GPU, ConsumoGPU, _, _) ,
 	fuente(Fuente, PotenciaFuente, _) ,
-	WattsRequeridos is ConsumoCPU + ConsumoGPU + 150,
+	margen_seguridad_fuente(Margen) ,
+	WattsRequeridos is ConsumoCPU + ConsumoGPU + Margen ,
 	PotenciaFuente >= WattsRequeridos.
 
 
 % Verifica que la RAM y las gamas de CPU/GPU satisfagan el perfil de uso
 
 cumple_uso(Uso, CPU, RAM, GPU) :-
-	perfil_uso(Uso, MinRAM, GamaMinCPU, GamaMinGPU) ,
+	perfil_uso(Uso, MinRAM) ,
 	procesador(CPU, _, _, GamaCPU, _) ,
-	gama_suficiente(GamaCPU, GamaMinCPU) ,
+	gama_adecuada(Uso, cpu, GamaCPU) ,
 	gpu(GPU, _, GamaGPU, _) ,
-	gama_suficiente(GamaGPU, GamaMinGPU) ,
+	gama_adecuada(Uso, gpu, GamaGPU) ,
 	memoria_ram(RAM, _, CapacidadRAM, _) ,
 	CapacidadRAM >= MinRAM.
 
@@ -109,29 +120,74 @@ costo_total(CPU, Placa, RAM, GPU, Fuente, CostoTotal) :-
 	fuente(Fuente, _, P5) ,
 	CostoTotal is P1 + P2 + P3 + P4 + P5.
 
+% Regla de holgura: clasifica qué tan sobrada queda la fuente de poder
+
+clasificar_holgura_fuente(Potencia, WattsRequeridos, Nivel) :-
+	Diferencia is Potencia - WattsRequeridos ,
+	(Diferencia =< 50 -> Nivel = ajustada ;
+	Diferencia =< 200 -> Nivel = optima ;
+	Nivel = sobrada).
+
+% Regla de desequilibrio: detecta cuellos de botella obvios entre CPU y GPU
+
+desequilibrio_componentes(CPU, GPU, Diagnostico) :-
+	procesador(CPU, _, _, GamaCPU, _),
+	gpu(GPU, _, GamaGPU, _),
+	( (GamaCPU == media, GamaGPU == alta) ->
+        Diagnostico = 'Aviso: CPU gama media puede limitar un poco la GPU alta'
+	; (GamaCPU == alta, GamaGPU == media) ->
+        Diagnostico = 'Aviso: CPU sobrada para una GPU de gama media'
+	;
+		Diagnostico = 'Componentes equilibrados'
+	).
 
 % ==============================================================================
-% PREDICADO PRINCIPAL (EL QUE USARÁ LA API)
+% 9. PREDICADO PRINCIPAL (CON PROTECCIÓN CONTRA DATOS MAL FORMADOS)
 % ==============================================================================
 
-% recomendar_ensamble(+Uso, +PresupuestoMax, -CPU, -Placa, -RAM, -GPU, -Fuente, -CostoTotal)
-% Entradas: Uso (atomo: ofimatica, gaming, render), PresupuestoMax (numero)
-% Salidas: Nombres de los 5 componentes y el CostoTotal calculado
+% CASO 1: Datos incompletos (variables no instanciadas como _ o U)
 
-recomendar_ensamble(Uso, PresupuestoMax, CPU, Tarjeta, RAM, GPU, Fuente, CostoTotal) :-
+consultar_ensamble(Uso, Presupuesto, datos_incompletos, nulo, Explicacion) :-
+    (var(Uso) ; var(Presupuesto)), !,
+    Explicacion = 'Error: Debes ingresar un uso especifico y un presupuesto numerico.'.
 
-    % 1. Valida que el presupuesto sea positivo (filtro de datos inválidos)
-	number(PresupuestoMax),
-	PresupuestoMax > 0,
+% CASO 2: Presupuesto no es un numero (ej. abc)
 
-    % 2. Genera componentes compatibles físicamente
-	combo_compatible(CPU, Tarjeta, RAM),
-	gpu(GPU, _, _, _),
-	fuente_suficiente(CPU, GPU, Fuente),
+consultar_ensamble(_, Presupuesto, datos_invalidos, nulo, Explicacion) :-
+    \+ number(Presupuesto), !,
+    Explicacion = 'Error: El presupuesto ingresado no es un numero valido.'.
 
-    % 3. Comprueba que satisfagan el uso
-	cumple_uso(Uso, CPU, RAM, GPU),
+% CASO 3: Presupuesto negativo o uso inexistente
 
-    % 4. Comprueba costo contra el presupuesto
-	costo_total(CPU, Tarjeta, RAM, GPU, Fuente, CostoTotal),
-	CostoTotal =< PresupuestoMax.
+consultar_ensamble(Uso, Presupuesto, error_datos, nulo, Explicacion) :-
+    (Presupuesto =< 0 ; \+ perfil_uso(Uso, _)), !,
+    Explicacion = 'Datos invalidos: Presupuesto debe ser mayor a 0 y uso reconocido.'.
+
+% CASO 4: Éxito (Ensamble encontrado, ahora usa las nuevas reglas)
+
+consultar_ensamble(Uso, Presupuesto, exito, ensamble(CPU, Placa, RAM, GPU, Fuente, Costo), Explicacion) :-
+    number(Presupuesto), Presupuesto > 0,
+    nonvar(Uso), perfil_uso(Uso, _),
+    combo_compatible(CPU, Placa, RAM),
+    cumple_uso(Uso, CPU, RAM, GPU),
+    fuente_suficiente(CPU, GPU, Fuente, WattsReq, Potencia),
+    costo_total(CPU, Placa, RAM, GPU, Fuente, Costo),
+    Costo =< Presupuesto,
+    clasificar_holgura_fuente(Potencia, WattsReq, Holgura),
+    desequilibrio_componentes(CPU, GPU, Equil),
+    atomic_list_concat(['Ensamble valido. Fuente ', Holgura, ' (', Potencia, 'W). ', Equil, '.'], Explicacion).
+
+% CASO 5: Presupuesto Insuficiente
+
+consultar_ensamble(Uso, Presupuesto, presupuesto_insuficiente, nulo, Explicacion) :-
+	number(Presupuesto), Presupuesto > 0,
+	nonvar(Uso), perfil_uso(Uso, _),
+		\+ (
+		combo_compatible(CPU, Placa, RAM),
+		cumple_uso(Uso, CPU, RAM, GPU),
+		% CORRECCIÓN: Usamos la variable 'Fuente' en ambas líneas en lugar de '_'
+		fuente_suficiente(CPU, GPU, Fuente, _, _),
+		costo_total(CPU, Placa, RAM, GPU, Fuente, Costo),
+		Costo =< Presupuesto
+		) ,
+    Explicacion = 'No hay solucion: Presupuesto insuficiente para este uso.'.
