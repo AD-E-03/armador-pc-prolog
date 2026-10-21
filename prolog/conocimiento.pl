@@ -70,7 +70,7 @@ compatible_cpu_tarjeta(CPU, Tarjeta):-
 	tarjeta_madre(Tarjeta, Socket, _, _).
 
 
-% compatible_placa_ram(Tarjeta, RAM)
+% compatible_tarjeta_ram(Tarjeta, RAM)
 
 compatible_tarjeta_ram(Tarjeta, RAM) :-
 	tarjeta_madre(Tarjeta, _, TipoRAM, _) ,
@@ -84,7 +84,7 @@ combo_compatible(CPU, Tarjeta, RAM) :-
 	compatible_tarjeta_ram(Tarjeta, RAM).
 
 
-% fuente_suficiente(CPU, GPU, Fuente WattsRequeridos, PotenciaFuente)
+% fuente_suficiente(CPU, GPU, Fuente, WattsRequeridos, PotenciaFuente)
 % Dato del dominio extraído para claridad
 
 margen_seguridad_fuente(150).
