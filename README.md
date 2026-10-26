@@ -105,5 +105,4 @@ Con `{"uso": "render", "presupuesto": 1204}` responde `conclusion: "presupuesto_
 Con `gaming` y 1200 el sistema encuentra 55 configuraciones y la interfaz muestra las 10 más económicas. Las pruebas en la versión publicada están en [`docs/casos_produccion.md`](docs/casos_produccion.md).
 
 ## Declaración de uso de IA
-- La base de conocimientos (`prolog/conocimiento.pl`: hechos, reglas y predicados) fue escrita por el autor sin IA generativa.
-- Se usó Claude (Anthropic) para: configuración de Git, GitHub, Docker y Vercel; el servidor HTTP y la interfaz web; la integración entre ambos; la documentación; y comentarios en lenguaje natural sobre el diseño y la revisión de la lógica, sin que generara ni corrigiera código Prolog de la base de conocimientos.
+La lógica de `prolog/conocimiento.pl` fue escrita por el autor sin IA generativa. Se usaron Gemini y Claude para orientación, infraestructura, integración y documentación. El detalle está en [`docs/uso-ia.md`](docs/uso-ia.md).
