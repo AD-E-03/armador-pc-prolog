@@ -2,7 +2,7 @@
 
 | # | Tipo de caso | Consulta | Resultado esperado | Resultado obtenido | Evidencia |
 |---|--------------|----------|--------------------|--------------------|-----------|
-| 1 | Consulta verdadera | `compatible_cpu_tarjeta(ryzen_5_5600x, msi_b550m_pro).` | true. | true. | [`docs/evidencias/casos_prueba/caso01.png`](caso01.png) |
+| 1 | Consulta verdadera | `compatible_cpu_tarjeta(ryzen_5_5600x, msi_b550m_pro).` | true. | true. | [`docs/evidencias/casos_prueba/caso01.png`](docs/evidencias/casos_prueba/caso01.png). |
 | 2 | Consulta falsa (socket distinto) | `compatible_cpu_tarjeta(ryzen_7_7700x, asus_prime_a320m).` | false. | false. | ['docs/evidencias/casos_prueba/caso02.png'](caso02.png) |
 | 3 | Múltiples soluciones | `compatible_cpu_tarjeta(ryzen_3_3200g, T).` | T = asus_prime_a320m ; T = msi_b550m_pro | T = asus_prime_a320m ; T = msi_b550m_pro | ['docs/evidencias/casos_prueba'](caso03.png) |
 | 4 | Múltiples soluciones con aritmética | `fuente_suficiente(ryzen_7_7700x, rtx_4070_super, F, W, P).` | 3 soluciones, W = 475: corsair_550w, cooler_master_650w, thermaltake_750w | 3 soluciones, W = 475: corsair_550w, cooler_master_650w, thermaltake_750w | ['docs/evidencias/casos_prueba'](caso04.png) |
